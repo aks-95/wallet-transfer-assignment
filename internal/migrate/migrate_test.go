@@ -77,6 +77,8 @@ func TestTransferConstraints(t *testing.T) {
 	defer db.Close()
 
 	require.NoError(t, migrate.Up(ctx, db.Pool))
+	_, err = db.Pool.Exec(ctx, `TRUNCATE TABLE ledger_entries, transfers, wallets RESTART IDENTITY CASCADE`)
+	require.NoError(t, err)
 
 	var fromWalletID, toWalletID string
 	err = db.Pool.QueryRow(ctx, `INSERT INTO wallets (balance) VALUES (1000) RETURNING id`).Scan(&fromWalletID)
