@@ -10,12 +10,29 @@ import (
 	"time"
 
 	"github.com/aks-95/wallet-transfer-assignment/internal/handler"
+	"github.com/aks-95/wallet-transfer-assignment/internal/migrate"
+	"github.com/aks-95/wallet-transfer-assignment/internal/repository"
+	"github.com/aks-95/wallet-transfer-assignment/internal/service"
 )
 
 func main() {
 	addr := envOrDefault("SERVER_ADDR", ":8080")
 
-	router := handler.NewRouter()
+	ctx := context.Background()
+	db, err := repository.NewFromEnv(ctx)
+	if err != nil {
+		log.Fatalf("database connection failed: %v", err)
+	}
+	defer db.Close()
+
+	if err := migrate.Up(ctx, db.Pool); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
+
+	transferService := service.NewTransferService(db)
+	router := handler.NewRouter(handler.Dependencies{
+		TransferService: transferService,
+	})
 
 	server := &http.Server{
 		Addr:              addr,
@@ -34,10 +51,10 @@ func main() {
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("server shutdown failed: %v", err)
 	}
 }

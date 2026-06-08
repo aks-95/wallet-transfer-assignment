@@ -25,7 +25,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestRouterHealth(t *testing.T) {
-	router := NewRouter()
+	router := NewRouter(Dependencies{})
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
