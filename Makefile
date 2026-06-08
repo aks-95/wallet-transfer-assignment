@@ -1,6 +1,6 @@
-.PHONY: up down test lint fmt run tidy
+.PHONY: up down test lint fmt run tidy migrate
 
-DATABASE_URL ?= postgres://wallet:wallet@localhost:5432/wallet_transfer?sslmode=disable
+DATABASE_URL ?= postgres://postgres:root@localhost:5432/wallet_transfer?sslmode=disable
 
 up:
 	docker compose up -d
@@ -22,6 +22,9 @@ fmt:
 
 fmt-check:
 	@test -z "$$(gofmt -l .)"
+
+migrate:
+	DATABASE_URL=$(DATABASE_URL) go run ./cmd/migrate
 
 run:
 	DATABASE_URL=$(DATABASE_URL) go run ./cmd/server
